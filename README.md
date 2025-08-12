@@ -1,5 +1,5 @@
-### Massachusetts Wildlife Semantic Search Engine
-# Arvind Pillai
+# Massachusetts Wildlife Semantic Search Engine
+### By Arvind Pillai
 
 This is currently a WIP! 
 

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Massachusetts Nature Guide</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Massachusetts Nature Guide</h1>
+
+        <p></p>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="What would you like to know about Massachusetts wildlife?">
+            <button onclick="search()">Search</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
