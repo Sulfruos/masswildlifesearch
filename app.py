@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, render_template
-import search_engine
+from search_engine import WildlifeSearchEngine
 
 app = Flask(__name__)
+
+search_engine = WildlifeSearchEngine()
 
 # API endpoint
 @app.route('/api/search', methods=['POST'])
