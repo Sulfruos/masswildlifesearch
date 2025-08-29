@@ -44,11 +44,8 @@ function displayResults(data) {
     data.results.forEach((result, index) => {
         html += `
             <div class="result-item">
-                <div class="result-score">Relevance: ${(result.score * 100).toFixed(1)}%</div>
+                <div class="result-score">RRF Score: ${(result.score * 100).toFixed(1)}</div>
                 <div class="result-content">${result.content}</div>
-                <div class="result-metadata">
-                    <span class="section">${result.section || 'General'}</span>
-                </div>
             </div>
         `;
     });

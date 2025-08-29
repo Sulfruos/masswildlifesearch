@@ -31,8 +31,10 @@ class WildlifeSearchEngine:
         enhanced_corpus = []
         for doc in self.corpus:
             categories_text = " ".join(doc.get("categories", []))
+            section = " ".join((doc["section"]).split('_'))
             print(categories_text)
-            enhanced_corpus.append(f"{doc["content"]} {categories_text}")
+            print(section)
+            enhanced_corpus.append(f"{section} {doc["content"]} {categories_text}")
         embeddings = self.model.encode_document(enhanced_corpus, convert_to_tensor=False)
         index = faiss.IndexFlatIP(embeddings.shape[1])
         index.add(embeddings)
