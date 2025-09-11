@@ -32,10 +32,10 @@ class WildlifeSearchEngine:
         for doc in self.corpus:
             categories_text = " ".join(doc.get("categories", []))
             section = " ".join((doc["section"]).split('_'))
-            print(categories_text)
-            print(section)
-            enhanced_corpus.append(f"{section} {doc["content"]} {categories_text}")
-        embeddings = self.model.encode_document(enhanced_corpus, convert_to_tensor=False)
+            enhanced_text = f"{section} {doc["content"]} {categories_text}"
+            # print(enhanced_text)
+            enhanced_corpus.append(enhanced_text)
+        embeddings = self.model.encode(enhanced_corpus, convert_to_tensor=False)
         index = faiss.IndexFlatIP(embeddings.shape[1])
         index.add(embeddings)
         faiss.write_index(index, "nature_guide.index")
@@ -54,6 +54,7 @@ class WildlifeSearchEngine:
     def _build_bm25_index(self):
         def preprocess_text(text):
             text = text.lower()
+            text = text.replace('-', ' ')
             text = text.translate(str.maketrans('', '', string.punctuation))
             return text.split()
         
@@ -61,20 +62,16 @@ class WildlifeSearchEngine:
         enhanced_corpus = []
         for doc in self.corpus:
             categories_text = " ".join(doc.get("categories", []))
-            enhanced_corpus.append(f"{doc['content']} {categories_text}")
+            section = " ".join((doc["section"]).split('_'))
+            enhanced_text = f"{section} {doc["content"]} {categories_text}"
+            # print(enhanced_text)
+            enhanced_corpus.append(enhanced_text)
         
         tokenized_corpus = [preprocess_text(doc) for doc in enhanced_corpus]
         bm25 = BM25Okapi(tokenized_corpus)
         return bm25
 
-    def update_faiss(self):
-        ### update the nature guide index in faiss
-        corpus_embeddings = self.model.encode_document(self.corpus, convert_to_tensor=False)
-        index = faiss.IndexFlatIP(corpus_embeddings.shape[1])
-        index.add(corpus_embeddings)
-        faiss.write_index(index, "nature_guide.index")
-
-    def query_docs(self, query, top_k=3):
+    def query_docs(self, query, top_k=5):
 
         ### evaluate queries and return top_k results for each
 
@@ -124,7 +121,6 @@ class WildlifeSearchEngine:
 if __name__ == "__main__":
 
     my_search_engine = WildlifeSearchEngine()
-    # my_search_engine.update_faiss()
 
     # Sample queries for running without using flask:
     # queries = [
