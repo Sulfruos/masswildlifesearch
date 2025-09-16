@@ -4,6 +4,7 @@ import json
 import os
 import faiss
 from sentence_transformers import SentenceTransformer, util
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from rank_bm25 import BM25Okapi
 
 class WildlifeSearchEngine:
@@ -12,6 +13,14 @@ class WildlifeSearchEngine:
         self.corpus = self._load_corpus()
         self.faiss_index = self._build_faiss_index()
         self.bm25_index = self._build_bm25_index()
+
+        self.qa_model = AutoModelForCausalLM.from_pretrained(
+        "microsoft/phi-2",
+        torch_dtype=torch.float32,
+        trust_remote_code=True
+        ).to("cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2", trust_remote_code=True)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
     
     def _load_corpus(self):
         corpus = []
@@ -33,7 +42,7 @@ class WildlifeSearchEngine:
             categories_text = " ".join(doc.get("categories", []))
             section = " ".join((doc["section"]).split('_'))
             enhanced_text = f"{section} {doc["content"]} {categories_text}"
-            # print(enhanced_text)
+            print(enhanced_text)
             enhanced_corpus.append(enhanced_text)
         embeddings = self.model.encode(enhanced_corpus, convert_to_tensor=False)
         index = faiss.IndexFlatIP(embeddings.shape[1])
@@ -71,7 +80,7 @@ class WildlifeSearchEngine:
         bm25 = BM25Okapi(tokenized_corpus)
         return bm25
 
-    def query_docs(self, query, top_k=5):
+    def query_docs(self, query, top_k=3):
 
         ### evaluate queries and return top_k results for each
 
@@ -114,21 +123,58 @@ class WildlifeSearchEngine:
         for idx in rrf_top_k:
             print("------")
             print(f"Score: {scores[idx]:.4f}", self.corpus[idx]["content"])
-            results.append({"score": scores[idx], "content": self.corpus[idx]["content"]})
+            print(f"Source: {scores[idx]:.4f}", self.corpus[idx]["source"])
+            results.append({"score": scores[idx], "content": self.corpus[idx]["content"], "source": self.corpus[idx]["source"]})
+            
 
         return results
+    
+    def generate_rag_answer(self, query):
+
+        # get top k relevant docs for rag and get their context chunks
+        results = self.query_docs(query)
+        context_chunks = [res["content"] for res in results]
+
+        context = "\n\n".join([f"Context {i+1}: {chunk}" for i, chunk in enumerate(context_chunks)])
+        
+        prompt = f"""Based on the provided context, answer the following question concisely and accurately.
+
+    {context}
+
+    Question: {query}
+    Answer:"""
+        
+        inputs = self.tokenizer(prompt, return_tensors="pt", return_attention_mask=True, truncation=True, max_length=512)
+        
+        with torch.no_grad():
+            outputs = self.qa_model.generate(
+                **inputs,
+                max_new_tokens=150,  
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                pad_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id
+            )
+        
+        # Extract only the new tokens (the answer)
+        input_length = inputs['input_ids'].shape[1]
+        answer = self.tokenizer.decode(outputs[0][input_length:], skip_special_tokens=True)
+        
+        # Clean up common issues
+        answer = answer.split("Question:")[0].strip()  # Stop at next question
+        answer = answer.split("\n\n")[0].strip()      # Stop at paragraph break
+        
+        return answer
 
 if __name__ == "__main__":
-
     my_search_engine = WildlifeSearchEngine()
 
-    # Sample queries for running without using flask:
-    # queries = [
-    #     "How do black bears look?",
-    #     "When do black bears mate?",
-    #     "What is the black bear population in Massachusetts?",
-    # ]
+    query = "What should I do if I see a bear?"
+    # results = my_search_engine.query_docs(query)
 
-    # for query in queries:
-    #     results = my_search_engine.query_docs(query)
-    #     print(results)
+    # chunks = [res["content"] for res in results]
+    # answer = generate_rag_answer(chunks, query)
+    # print(answer)
+
+    print(my_search_engine.generate_rag_answer(query))

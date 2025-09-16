@@ -46,6 +46,7 @@ function displayResults(data) {
             <div class="result-item">
                 <div class="result-score">RRF Score: ${(result.score * 100).toFixed(1)}</div>
                 <div class="result-content">${result.content}</div>
+                <div class="result-score">Source: ${result.source}</div>
             </div>
         `;
     });
