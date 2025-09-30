@@ -165,7 +165,7 @@ class WildlifeSearchEngine:
         answer = answer.split("Question:")[0].strip()  # Stop at next question
         answer = answer.split("\n\n")[0].strip()      # Stop at paragraph break
         
-        return answer
+        return results, answer
 
 if __name__ == "__main__":
     my_search_engine = WildlifeSearchEngine()
@@ -174,7 +174,9 @@ if __name__ == "__main__":
     # results = my_search_engine.query_docs(query)
 
     # chunks = [res["content"] for res in results]
-    # answer = generate_rag_answer(chunks, query)
+    # answer = my_search_engine.generate_rag_answer(chunks, query)
     # print(answer)
 
-    print(my_search_engine.generate_rag_answer(query))
+    results, answer = my_search_engine.generate_rag_answer(query)
+
+    print(answer)

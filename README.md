@@ -4,5 +4,6 @@
 This is currently a WIP! 
 
 TODO:
- - Next stage: convert to RAG pipeline to give smarter, genuine answers.
+ - Improve UI to better show answer and sources.
+ - Modify RAG pipeline to try to use more sophisticated model than phi-2.
  - Add an "I'm Feeling Lucky!" feature to promote easy wildlife learning.

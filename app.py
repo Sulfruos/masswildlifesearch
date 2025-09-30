@@ -14,13 +14,15 @@ def search():
     if not query:
         return jsonify({'error', 'No query provided.'}), 400
     
-    results = search_engine.query_docs(query)
+    results, answer = search_engine.generate_rag_answer(query)
 
     print(results)
+    print(answer)
 
     return jsonify({
         'query': query,
-        'results': results
+        'results': results,
+        'answer': answer
     })
 
 @app.route('/')

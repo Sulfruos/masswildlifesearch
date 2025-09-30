@@ -1,23 +1,398 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Massachusetts Nature Guide</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #2d5016 0%, #4a7c2c 50%, #356b1f 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            color: white;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.95);
+            font-weight: 400;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        #searchInput {
+            flex: 1;
+            border: none;
+            padding: 16px 20px;
+            font-size: 16px;
+            border-radius: 12px;
+            outline: none;
+            background: #f8f9fa;
+            transition: background 0.2s;
+        }
+
+        #searchInput:focus {
+            background: #fff;
+        }
+
+        button {
+            background: #4a7c2c;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: #3d6624;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 124, 44, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            color: #666;
+            font-size: 16px;
+        }
+
+        .error {
+            background: #fee;
+            padding: 20px;
+            border-radius: 12px;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .answer-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-left: 5px solid #4a7c2c;
+        }
+
+        .answer-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #4a7c2c;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .answer-text {
+            font-size: 18px;
+            line-height: 1.7;
+            color: #2c3e50;
+        }
+
+        .sources-section {
+            margin-top: 20px;
+        }
+
+        .sources-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .sources-header:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .sources-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .source-count {
+            background: #4a7c2c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .chevron {
+            font-size: 20px;
+            color: #666;
+            transition: transform 0.3s;
+        }
+
+        .chevron.open {
+            transform: rotate(180deg);
+        }
+
+        .sources-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+
+        .sources-content.open {
+            max-height: 2000px;
+        }
+
+        .source-item {
+            background: white;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 3px solid #e0e0e0;
+            transition: border-color 0.2s;
+        }
+
+        .source-item:hover {
+            border-left-color: #4a7c2c;
+        }
+
+        .source-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .source-link {
+            color: #4a7c2c;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+        }
+
+        .rrf-score {
+            font-size: 12px;
+            color: #999;
+            background: #f5f5f5;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        .source-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .no-results {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            color: #666;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .answer-card {
+                padding: 24px;
+            }
+
+            .answer-text {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Massachusetts Nature Guide</h1>
+        <header>
+            <h1>🦌 Massachusetts Nature Guide</h1>
+            <p class="subtitle">Explore wildlife and nature across the Commonwealth</p>
+        </header>
 
-        <p></p>
-        
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="What would you like to know about Massachusetts wildlife?">
-            <button onclick="search()">Search</button>
+        <div class="search-container">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="What would you like to know about Massachusetts wildlife?"
+                    aria-label="Search query"
+                >
+                <button onclick="search()">Search</button>
+            </div>
         </div>
-        
+
         <div id="results"></div>
     </div>
-    
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        async function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            
+            if (!query) {
+                alert('Please enter a search query!');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🔍 Searching through Massachusetts wildlife data...</div>';
+            
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="error">Something went wrong. Please try again.</div>';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results">No results found. Try a different search!</div>';
+                return;
+            }
+            
+            let html = `
+                <div class="answer-card">
+                    <div class="answer-label">Answer</div>
+                    <div class="answer-text">${data.answer || 'No answer generated.'}</div>
+                </div>
+
+                <div class="sources-section">
+                    <div class="sources-header" onclick="toggleSources()">
+                        <div class="sources-title">
+                            📚 Sources
+                            <span class="source-count">${data.results.length}</span>
+                        </div>
+                        <span class="chevron" id="chevron">▼</span>
+                    </div>
+                    <div class="sources-content" id="sourcesContent">
+            `;
+            
+            data.results.forEach((result, index) => {
+                const sourceDomain = result.source ? new URL(result.source).hostname.replace('www.', '') : 'Unknown';
+                html += `
+                    <div class="source-item">
+                        <div class="source-meta">
+                            <a href="${result.source}" target="_blank" class="source-link">
+                                🔗 ${sourceDomain}
+                            </a>
+                            <span class="rrf-score">Score: ${(result.score * 100).toFixed(1)}</span>
+                        </div>
+                        <div class="source-content">${result.content}</div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function toggleSources() {
+            const content = document.getElementById('sourcesContent');
+            const chevron = document.getElementById('chevron');
+            
+            content.classList.toggle('open');
+            chevron.classList.toggle('open');
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+    </script>
 </body>
 </html>
