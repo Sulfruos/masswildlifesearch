@@ -4,6 +4,5 @@
 This is currently a WIP! 
 
 TODO:
- - Improve UI to better show answer and sources.
- - Modify RAG pipeline to try to use more sophisticated model than phi-2.
+ - Add query preprocessing to correct common typos.
  - Add an "I'm Feeling Lucky!" feature to promote easy wildlife learning.

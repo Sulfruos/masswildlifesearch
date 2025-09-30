@@ -9,17 +9,25 @@ from rank_bm25 import BM25Okapi
 
 class WildlifeSearchEngine:
     def __init__(self):
+        self.device = "mps" if torch.backends.mps.is_available() else "cpu" # trying mps as I'm using an M3
+        print("Using device: " + self.device)
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
         self.corpus = self._load_corpus()
         self.faiss_index = self._build_faiss_index()
         self.bm25_index = self._build_bm25_index()
 
+        # self.qa_model = AutoModelForCausalLM.from_pretrained(
+        # "microsoft/phi-2",
+        # torch_dtype=torch.float32,
+        # trust_remote_code=True
+        # ).to("cpu")
+        # self.tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2", trust_remote_code=True)
+        # self.tokenizer.pad_token = self.tokenizer.eos_token
         self.qa_model = AutoModelForCausalLM.from_pretrained(
-        "microsoft/phi-2",
-        torch_dtype=torch.float32,
-        trust_remote_code=True
-        ).to("cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2", trust_remote_code=True)
+        "mistralai/Mistral-7B-Instruct-v0.3",
+        torch_dtype=torch.float16, 
+        ).to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.3")
         self.tokenizer.pad_token = self.tokenizer.eos_token
     
     def _load_corpus(self):
@@ -137,19 +145,27 @@ class WildlifeSearchEngine:
 
         context = "\n\n".join([f"Context {i+1}: {chunk}" for i, chunk in enumerate(context_chunks)])
         
-        prompt = f"""Based on the provided context, answer the following question concisely and accurately.
+    #     prompt = f"""Based on the provided context, answer the following question concisely and accurately.
 
-    {context}
+    # {context}
 
-    Question: {query}
-    Answer:"""
+    # Question: {query}
+    # Answer:"""
+
+        prompt = f"""<s>[INST] Based on the provided context about Massachusetts wildlife, answer the following question concisely and accurately. Provide a complete answer in 2-3 sentences.
+
+        Context:
+        {context}
+
+        Question: {query} [/INST]"""
         
         inputs = self.tokenizer(prompt, return_tensors="pt", return_attention_mask=True, truncation=True, max_length=512)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()} # move inputs to same device as model
         
         with torch.no_grad():
             outputs = self.qa_model.generate(
                 **inputs,
-                max_new_tokens=150,  
+                max_new_tokens=200,  
                 do_sample=True,
                 temperature=0.7,
                 top_p=0.9,

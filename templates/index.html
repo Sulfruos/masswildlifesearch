@@ -358,7 +358,8 @@
             `;
             
             data.results.forEach((result, index) => {
-                const sourceDomain = result.source ? new URL(result.source).hostname.replace('www.', '') : 'Unknown';
+                // const sourceDomain = result.source ? new URL(result.source).hostname.replace('www.', '') : 'Unknown';
+                const sourceDomain = result.source
                 html += `
                     <div class="source-item">
                         <div class="source-meta">
